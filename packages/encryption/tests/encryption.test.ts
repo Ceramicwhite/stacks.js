@@ -11,7 +11,6 @@ import * as aesCipher from '../src/aesCipher'
 import * as sha2Hash from '../src/sha2Hash'
 import * as hmacSha256 from '../src/hmacSha256'
 import * as ripemd160 from '../src/hashRipemd160'
-import BN from 'bn.js'
 import { getBufferFromBN } from '../src/ec'
 
 const privateKey = 'a5c61c6ca7b3e7e55edee68566aeab22e4da26baa285c7bd10e8d2218aa3b229'
@@ -461,15 +460,15 @@ test('bn-padded-to-64-bytes', () => {
     const ephemeralSK = ecurve.keyFromPrivate(hex)
     const ephemeralPK = ephemeralSK.getPublic()
     const sharedSecret = ephemeralSK.derive(ephemeralPK)
-    return getHexFromBN(sharedSecret).length === 64
+    return getHexFromBN(BigInt(sharedSecret.toString())).length === 64
   })
 
   expect(results.every(x => x)).toEqual(true)
 
-  const bnBuffer = getBufferFromBN(new BN(123))
+  const bnBuffer = getBufferFromBN(BigInt(123))
 
   expect(bnBuffer.byteLength).toEqual(32)
-  expect(bnBuffer.toString('hex')).toEqual(getHexFromBN(new BN(123)))
+  expect(bnBuffer.toString('hex')).toEqual(getHexFromBN(BigInt(123)))
 })
 
 test('encryptMnemonic & decryptMnemonic', async () => {

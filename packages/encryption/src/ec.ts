@@ -1,8 +1,7 @@
 import { Buffer } from '@stacks/common';
 import { ec as EllipticCurve } from 'elliptic';
-import * as BN from 'bn.js';
 import { randomBytes } from './cryptoRandom';
-import { FailedDecryptionError } from '@stacks/common';
+import { FailedDecryptionError, toBuffer } from '@stacks/common';
 import { getPublicKeyFromPrivate } from './keys';
 import { hashSha256Sync, hashSha512Sync } from './sha2Hash';
 import { createHmacSha256 } from './hmacSha256';
@@ -162,12 +161,12 @@ function isValidPublicKey(pub: string): {
 }
 
 /**
- * Hex encodes a 32-byte BN.js instance.
+ * Hex encodes a 32-byte bigint instance.
  * The result string is zero padded and always 64 characters in length.
  * @ignore
  */
-export function getHexFromBN(bnInput: BN): string {
-  const hexOut = bnInput.toString('hex', 64);
+export function getHexFromBN(bnInput: bigint): string {
+  const hexOut = bnInput.toString(16);
   if (hexOut.length === 64) {
     return hexOut;
   } else if (hexOut.length < 64) {
@@ -181,14 +180,14 @@ export function getHexFromBN(bnInput: BN): string {
 }
 
 /**
- * Returns a big-endian encoded 32-byte BN.js instance.
+ * Returns a big-endian encoded 32-byte buffer instance.
  * The result Buffer is zero padded and always 32 bytes in length.
  * @ignore
  */
-export function getBufferFromBN(bnInput: BN): Buffer {
-  const result = bnInput.toArrayLike(Buffer, 'be', 32);
+export function getBufferFromBN(bnInput: bigint): Buffer {
+  const result = toBuffer(bnInput, 32);
   if (result.byteLength !== 32) {
-    throw new Error('Failed to generate a 32-byte BN');
+    throw new Error('Failed to generate a 32-byte buffer instance');
   }
   return result;
 }
@@ -328,8 +327,8 @@ export async function encryptECIES(
   const ecPK = ecurve.keyFromPublic(publicKey, 'hex').getPublic();
   const ephemeralSK = ecurve.genKeyPair();
   const ephemeralPK = Buffer.from(ephemeralSK.getPublic().encodeCompressed());
-  const sharedSecret = ephemeralSK.derive(ecPK) as BN;
-  const sharedSecretBuffer = getBufferFromBN(sharedSecret);
+  const sharedSecret = ephemeralSK.derive(ecPK).toString();
+  const sharedSecretBuffer = getBufferFromBN(BigInt(sharedSecret));
   const sharedKeys = sharedSecretToKeys(sharedSecretBuffer);
 
   const initializationVector = randomBytes(16);
@@ -392,8 +391,8 @@ export async function decryptECIES(
     );
   }
 
-  const sharedSecret = ecSK.derive(ephemeralPK) as BN;
-  const sharedSecretBuffer = getBufferFromBN(sharedSecret);
+  const sharedSecret = ecSK.derive(ephemeralPK).toString();
+  const sharedSecretBuffer = getBufferFromBN(BigInt(sharedSecret));
 
   const sharedKeys = sharedSecretToKeys(sharedSecretBuffer);
 

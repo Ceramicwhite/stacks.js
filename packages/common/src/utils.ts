@@ -9,8 +9,6 @@ import { Buffer as BufferPolyfill } from 'buffer/';
 // so export using the type definition from NodeJS (@types/node).
 import type { Buffer as NodeJSBuffer } from 'buffer';
 
-import BN from 'bn.js';
-
 const AvailableBufferModule: typeof NodeJSBuffer =
   // eslint-disable-next-line node/prefer-global/buffer
   typeof Buffer !== 'undefined' ? Buffer : (BufferPolyfill as any);
@@ -330,17 +328,13 @@ export function getGlobalObjects<K extends Extract<keyof Window, string>>(
   }
   return result;
 }
-
+// After removing bn.js library provide backward compatibility for users passing bn.js instance
+type BN = import('bn.js'); // Type only import from @types/bn.js
 export type IntegerType = number | string | bigint | Uint8Array | BN;
 
 // eslint-disable-next-line node/prefer-global/buffer
 export function intToBytes(value: IntegerType, signed: boolean, byteLength: number): Buffer {
-  return intToBN(value, signed).toArrayLike(AvailableBufferModule, 'be', byteLength);
-}
-
-export function intToBN(value: IntegerType, signed: boolean): BN {
-  const bigInt = intToBigInt(value, signed);
-  return new BN(bigInt.toString());
+  return toBuffer(intToBigInt(value, signed), byteLength);
 }
 
 export function intToBigInt(value: IntegerType, signed: boolean): bigint {
@@ -380,17 +374,23 @@ export function intToBigInt(value: IntegerType, signed: boolean): bigint {
       // Allow byte arrays smaller than 128-bits to be passed.
       // This allows positive signed ints like `0x08` (8) or negative signed
       // ints like `0xf8` (-8) to be passed without having to pad to 16 bytes.
-      const bn = new BN(parsedValue, 'be').fromTwos(parsedValue.byteLength * 8);
+      const bn = fromTwos(BigInt(`0x${bytesToHex(parsedValue)}`), parsedValue.byteLength * 8);
       return BigInt(bn.toString());
     } else {
-      return BigInt(new BN(parsedValue, 'be').toString());
+      return BigInt(`0x${bytesToHex(parsedValue)}`);
     }
   }
-  if (parsedValue instanceof BN || BN.isBN(parsedValue)) {
+  // After removing bn.js library provide backward compatibility for users passing bn.js instance
+  // For backward compatibility with bn.js check if it's a bn.js instance
+  if (
+    parsedValue != null &&
+    typeof parsedValue === 'object' &&
+    parsedValue.constructor.name === 'BN'
+  ) {
     return BigInt(parsedValue.toString());
   }
   throw new TypeError(
-    `Invalid value type. Must be a number, bigint, integer-string, hex-string, BN.js instance, or Buffer.`
+    `Invalid value type. Must be a number, bigint, integer-string, hex-string, BigInt instance, or Buffer.`
   );
 }
 
@@ -412,4 +412,94 @@ export function hexToBigInt(hex: string): bigint {
 
 export function utf8ToBytes(content: string) {
   return new TextEncoder().encode(content);
+}
+
+/**
+ * Converts IntegerType to hex string
+ */
+export const intToHexString = (integer: IntegerType, lengthBytes = 8): string => {
+  const value = typeof integer === 'bigint' ? integer : intToBigInt(integer, false);
+  return value.toString(16).padStart(lengthBytes * 2, '0');
+};
+
+/**
+ * Converts hex string to Uint8Array
+ * @param {hex} hex string without 0x prefix
+ * @output {Uint8Array} instance of bytes
+ */
+export function hexToBytes(hex: string): Uint8Array {
+  if (typeof hex !== 'string') {
+    throw new TypeError('hexToBytes: expected string, got ' + typeof hex);
+  }
+  if (hex.slice(0, 2) === '0x') {
+    throw new Error('input hex should be without 0x prefix');
+  }
+  if (hex.length % 2)
+    throw new Error(`hexToBytes: received invalid unpadded hex, got: ${hex.length}`);
+
+  const array = new Uint8Array(hex.length / 2);
+
+  for (let i = 0; i < array.length; i++) {
+    const j = i * 2;
+    const hexByte = hex.slice(j, j + 2);
+    const byte = Number.parseInt(hexByte, 16);
+    if (Number.isNaN(byte) || byte < 0) throw new Error('Invalid byte sequence');
+    array[i] = byte;
+  }
+  return array;
+}
+
+const byteToHexCache: string[] = new Array(0xff);
+
+for (let n = 0; n <= 0xff; ++n) {
+  byteToHexCache[n] = n.toString(16).padStart(2, '0');
+}
+
+/**
+ * Converts Uint8Array to hex string
+ */
+export function bytesToHex(uint8a: Uint8Array): string {
+  const hexOctets = new Array(uint8a.length);
+  for (let i = 0; i < uint8a.length; ++i) hexOctets[i] = byteToHexCache[uint8a[i]];
+  return hexOctets.join('');
+}
+
+/**
+ * Converts bigint to buffer type
+ * @param {value} bigint value to be converted into buffer
+ * @param {length} buffer optional length
+ * @return {Buffer} buffer instance in big endian format
+ */
+export function toBuffer(value: bigint, length: number = 16) {
+  const hex = intToHexString(value, length);
+  // buffer instance in big endian format
+  return AvailableBufferModule.from(hexToBytes(hex));
+}
+
+/**
+ * Converts from negative number to two's complement
+ */
+export function toTwos(value: bigint, size: number): bigint {
+  // make sure its in range given the number of bits
+  if (
+    value < -(BigInt(1) << (BigInt(size) - BigInt(1))) ||
+    value > (BigInt(1) << (BigInt(size) - BigInt(1))) - BigInt(1)
+  )
+    throw `Integer out of range given ${size} bits to represent.`;
+
+  // if positive, return the positive value
+  if (value >= BigInt(0)) return BigInt(value);
+
+  // if negative, convert to twos complement representation
+  const result = ~((-value - BigInt(1)) | ~((BigInt(1) << BigInt(size)) - BigInt(1)));
+  return BigInt(result);
+}
+
+/**
+ * Converts from two's complement to negative number
+ */
+export function fromTwos(value: bigint, size: number) {
+  if ((value & (BigInt(1) << (BigInt(size) - BigInt(1)))) > BigInt(0))
+    value = value - (BigInt(1) << BigInt(size));
+  return value;
 }
