@@ -2,7 +2,7 @@ import { ChainID, getAddressFromPrivateKey, TransactionVersion } from '@stacks/t
 import { BIP32Interface, ECPair } from 'bitcoinjs-lib';
 import { ecPairToHexString } from '@stacks/encryption';
 
-const networkDerivationPath = `m/44'/5757'/0'/0/0`;
+const networkDerivationPath = `m/44'/0'/0'/0/0`;
 
 export const derivationPaths = {
   [ChainID.Mainnet]: networkDerivationPath,

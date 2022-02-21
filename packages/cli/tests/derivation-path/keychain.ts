@@ -20,7 +20,7 @@ export type WalletKeyInfoResult = {
 export const makekeychainTests: Array<[string, MakeKeychainResult]> = [
   [
     // Derivation Path
-    "m/44'/5757'/0'/0/0",
+    "m/44'/0'/0'/0/0",
     // Expected result
     {
       mnemonic: 'vivid oxygen neutral wheat find thumb cigar wheel board kiwi portion business',
@@ -35,7 +35,7 @@ export const makekeychainTests: Array<[string, MakeKeychainResult]> = [
   ],
   [
     // Derivation Path
-    "m/888'/0'/0",
+    "m/44'/0'/0",
     // Expected result
     {
       mnemonic: 'vivid oxygen neutral wheat find thumb cigar wheel board kiwi portion business',
@@ -53,7 +53,7 @@ export const makekeychainTests: Array<[string, MakeKeychainResult]> = [
 export const keyInfoTests: Array<[string, WalletKeyInfoResult]> = [
   [
     // Derivation Path
-    "m/44'/5757'/0'/0/0",
+    "m/44'/0'/0'/0/0",
     // Expected result
     {
       privateKey: 'd1124855494c883c5e1df0201be40a835f08ae5fc3a6520224b2239db94a818001',
@@ -65,7 +65,7 @@ export const keyInfoTests: Array<[string, WalletKeyInfoResult]> = [
   ],
   [
     // Derivation Path
-    "m/888'/0'/0",
+    "m/44'/0'/0",
     // Expected result
     {
       privateKey: 'd4d30d4fdaa59e166865b836548015c2780063b82e7b2a364c8a2e32df7139ce01',

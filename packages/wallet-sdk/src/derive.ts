@@ -9,9 +9,9 @@ import { StacksNetwork } from '@stacks/network';
 import { getAddressFromPrivateKey } from '@stacks/transactions';
 import { fetchFirstName } from './usernames';
 
-const DATA_DERIVATION_PATH = `m/888'/0'`;
-const WALLET_CONFIG_PATH = `m/44/5757'/0'/1`;
-const STX_DERIVATION_PATH = `m/44'/5757'/0'/0`;
+const DATA_DERIVATION_PATH = `m/44'/0'`;
+const WALLET_CONFIG_PATH = `m/44/0'/0'/1`;
+const STX_DERIVATION_PATH = `m/44'/0'/0'/0`;
 
 export const deriveWalletKeys = async (rootNode: BIP32Interface): Promise<WalletKeys> => {
   assertIsTruthy(rootNode.privateKey);
@@ -50,7 +50,7 @@ export const deriveConfigPrivateKey = (rootNode: BIP32Interface): Buffer => {
  * @param rootNode A keychain that was created using the wallet's seed phrase
  */
 export const deriveLegacyConfigPrivateKey = (rootNode: BIP32Interface): string => {
-  const derivedLegacyKey = rootNode.deriveHardened(45).privateKey;
+  const derivedLegacyKey = rootNode.deriveHardened(44).privateKey;
   if (!derivedLegacyKey) {
     throw new TypeError('Unable to derive config key for wallet identities');
   }
