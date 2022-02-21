@@ -5,7 +5,7 @@
   "prettier": "@stacks/prettier-config",
   "repository": {
     "type": "git",
-    "url": "git+http://100.95.226.48:8085/Ceramicwhite/stacks.js.git"
+    "url": "git+http:github.com/Ceramicwhite/stacks.js.git"
   },
   "workspaces": [
     "packages/**"
